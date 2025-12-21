@@ -60,7 +60,7 @@ jobs:
             🚀 感谢您使用健康提醒助手！愿您每天都有好身体。
 
             [GitHub 仓库地址](https://github.com/${{ github.repository }})
-            [使用文档](https://github.com/${{ github.repository }/blob/main/README.md)
+            [使用文档](https://github.com/${{ github.repository }}/blob/main/README.md)
 
           draft: false
           prerelease: false

@@ -4,13 +4,13 @@
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=flat-square)](https://tauri.app/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.4.0-orange?style=flat-square)](https://github.com/)
+[![Version](https://img.shields.io/badge/Version-1.4.4-orange?style=flat-square)](https://github.com/)
 
 在快节奏的数字时代，健康的身体是高效生产力的基石。**健康办公助手** 是一款基于 Rust 与 Tauri 开发的高性能桌面应用，旨在通过智能化的任务排程与多维提醒，帮助你在专注工作的同时，科学地进行久坐、补水与用眼休息。
 
 ---
 
-## 视觉呈现
+## 🖼️ 视觉呈现
 
 ### 核心看板 (Dashboard) & 自定义任务排程 (Tasks)
 
@@ -30,7 +30,7 @@
 
 ---
 
-## 核心特性
+## 💎 核心特性
 
 ### 1. 科学排程，精准反馈
 - **多任务并行倒计时**：支持久坐、喝水、护眼等多个健康任务同时运行，互不干扰。
@@ -45,11 +45,11 @@
 ### 3. 系统集成，静默运行
 - **原生系统通知**：采用底层 Rust 通讯，支持在最小化到托盘时发送系统级弹窗。
 - **托盘常驻**：支持最小化至任务栏托盘，不占用宝贵的任务栏空间。
-- **开机自启**：集成 Windows 注册表管理，实现一键开启随心启动。
+- **开机自启**：集成官方 Autostart 插件，实现一键开启随心启动。
 
 ---
 
-## 技术架构
+## 🛠️ 技术架构
 
 本产品追求极致的内存占用与启动速度：
 
@@ -60,7 +60,7 @@
 
 ---
 
-## 快速开始
+## 🚀 快速开始
 
 ### 开发环境配置
 确保你已安装 Rust 工具链与 Node.js 环境。
@@ -75,43 +75,37 @@ npm run tauri dev
 
 ### 构建正式版本
 ```bash
-# 构建所有平台
+# 使用 GitHub Actions 自动构建，或在本地执行：
 npm run tauri build
-
-# 构建特定平台
-npm run tauri build -- --target nsis    # Windows
-npm run tauri build -- --target dmg     # macOS
-npm run tauri build -- --target appimage # Linux
 ```
 
 ---
 
-## 后续路线图
+## 📈 后续路线图
 
 - [ ] 数据统计视图：查看周/月健康达成率。
 - [ ] 更多系统音效：支持自定义上传提醒音。
 - [ ] 专注模式联动：在电脑全屏工作或游戏时智能静默。
 
-## 版本记录
+## 📜 版本记录
 
-### v1.4.0 (2025-12-21)
-- **本地化完善**：完成中文本地化内容，提供更友好的用户体验。
-- **自启动集成**：集成开机自启动插件，实现一键开启随心启动功能。
-- **Bug 修复**：修复若干bug。
+### v1.4.4 (2025-12-21)
+- **打包优化**：修复了 Linux Debian 包名规范问题，并内置了完整的运行时依赖声明。
+- **逻辑修复**：实现了非阻塞计时，提醒触发后立即开始下一轮计时，不再依赖用户点击。
+- **功能实做**：彻底完成“系统设置”模块，包括真实的开机自启控制和音效测试功能。
+- **CI/CD 增强**：优化了 GitHub Actions 脚本，支持 macOS Apple Silicon 原生构建。
 
 ### v1.3.0 (2025-12-21)
 - **UI 重写**：全面采用 Apple 设计语言，重构了看板和任务卡片。
 - **通知系统**：修复了 Tauri 2.0 系统通知失效问题，集成原生 Rust 通知插件。
 - **输入优化**：重构渲染引擎实现局部刷新，解决了修改分钟数时的焦点丢失问题。
-- **多任务支持**：支持自定义任务的新增、修改与删除，各任务拥有独立进度环。
-- **音效升级**：将简单的蜂鸣音替换为温和的系统级 Notify 音效。
 
 ### v1.0.0 (2025-12-20)
 - 初始版本发布，包含基础的久坐、喝水、护眼倒计时功能。
 
 ---
 
-## 许可证
+## 📄 许可证
 
 本项目遵循 **MIT License**。您可以自由地使用、修改和分发。
 

@@ -75,9 +75,9 @@ jobs:
             ## 健康提醒助手 ${{ github.ref_name }}
             
             ### 🛠️ 跨平台支持
-            - **Windows**: 提供 NSIS (.exe) 安装包。
+            - **Windows**: 提供 NSIS (.exe) 安装程序。
             - **macOS**: 支持 Intel (.x86_64) 与 Apple Silicon (.aarch64) 芯片。
-            - **Linux**: 提供 AppImage 与 Debian (.deb) 安装包。
+            - **Linux**: 提供 AppImage 与 Debian (.deb) 软件包。
 
             ### ✨ 核心功能
             - 多任务并行健康提醒（久坐、喝水、护眼）。

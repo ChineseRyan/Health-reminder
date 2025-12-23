@@ -153,6 +153,7 @@ async function startLockScreen(task) {
   };
   
   try {
+    await invoke('show_main_window');
     await invoke('enter_lock_mode');
   } catch (e) {
     console.error('Failed to enter lock mode', e);
@@ -500,7 +501,7 @@ function renderFullUI() {
       </div>
     </div>
 
-    <div class="footer">健康办公助手 v1.4.6 · 愿你每天都有好身体</div>
+    <div class="footer">健康办公助手 v1.4.7 · 愿你每天都有好身体</div>
   `;
 
   bindEvents();

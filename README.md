@@ -4,7 +4,7 @@
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=flat-square)](https://tauri.app/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.4.4-orange?style=flat-square)](https://github.com/)
+[![Version](https://img.shields.io/badge/Version-1.4.7-orange?style=flat-square)](https://github.com/)
 
 在快节奏的数字时代，健康的身体是高效生产力的基石。**健康办公助手** 是一款基于 Rust 与 Tauri 开发的高性能桌面应用，旨在通过智能化的任务排程与多维提醒，帮助你在专注工作的同时，科学地进行久坐、补水与用眼休息。
 
@@ -27,6 +27,18 @@
   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
   <img src="./docs/screenshots/弹窗提醒.png" alt="System notification" width="48%">
 </p>
+
+### 锁屏功能（选择开启）
+
+<p align="center">
+  <img src="./docs/screenshots/锁屏设置.png" alt="Lock screen settings" width="30%">
+</p>
+
+<p align="center">
+  <img src="./docs/screenshots/锁屏.png" alt="Lock screen" width="70%">
+</p>
+
+
 
 ---
 
@@ -96,6 +108,12 @@ npm run tauri build
 ## 📜 版本记录
 
 > **请下载最新安装包重新安装（会自动覆盖）**
+
+### v1.4.7 (2025-12-23)
+- **强制休息锁屏**：新增锁屏功能，提醒触发时全屏锁定，确保真正休息。
+- **锁屏时长可配置**：支持 10s / 20s / 30s 三档锁屏时长选择。
+- **紧急解锁**：长按 3 秒可紧急解锁，防止耽误紧急任务。
+- **自动弹出**：锁屏时自动弹出窗口，即使最小化到托盘也能正常触发。
 
 ### v1.4.6 (2025-12-22)
 - **双图标修复**：修复显示两个图标的问题。

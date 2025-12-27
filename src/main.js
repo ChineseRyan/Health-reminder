@@ -640,7 +640,7 @@ function renderFullUI() {
       <div class="setting-row">
         <div class="setting-info">
           <label>版本更新</label>
-          <span class="setting-desc">当前版本 v1.5.1${updateInfo ? `（有新版本 v${updateInfo.version}）` : '（已是最新）'}</span>
+          <span class="setting-desc">当前版本 v1.5.1${updateInfo ? `（有新版本 v${updateInfo.version}）` : ''}</span>
         </div>
         <button class="check-update-btn" id="checkUpdateBtn" ${isCheckingUpdate ? 'disabled' : ''}>
           ${isCheckingUpdate ? '<span class="spinner"></span> 检查中...' : (updateInfo ? '立即更新' : '检查更新')}
@@ -735,6 +735,7 @@ function bindEvents() {
           task.enabled = !task.enabled;
           el.classList.toggle('active', task.enabled);
           saveSettings();
+          syncTasksToBackend();  // 同步到后端
           updateLiveValues();
         }
       } else if (el.id === 'soundToggle') {

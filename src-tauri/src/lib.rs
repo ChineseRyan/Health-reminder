@@ -177,16 +177,21 @@ fn sync_tasks(tasks: Vec<TaskConfig>) {
 
     for task in tasks {
         if let Some(existing) = state.tasks.get(&task.id) {
-            // 任务已存在，检查 interval 是否变化
-            if existing.config.interval != task.interval {
-                // interval 变了，重置计时
+            // 任务已存在
+            let should_reset =
+                // interval 变了
+                existing.config.interval != task.interval ||
+                // 从禁用变为启用，需要重置计时
+                (!existing.config.enabled && task.enabled);
+
+            if should_reset {
                 new_tasks.insert(task.id.clone(), TaskTimer {
                     config: task,
                     reset_time: now,
                     triggered: false,
                 });
             } else {
-                // interval 没变，保留计时状态
+                // 保留计时状态
                 new_tasks.insert(task.id.clone(), TaskTimer {
                     config: task,
                     reset_time: existing.reset_time,

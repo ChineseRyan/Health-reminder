@@ -533,6 +533,11 @@ function resetTask(id) {
   const task = settings.tasks.find(t => t.id === id);
   if (task) {
     countdowns[id] = task.interval * 60;
+    // 重置时清除推迟状态
+    if (snoozedStatus[id]) {
+      snoozedStatus[id].active = false;
+      snoozedStatus[id].remaining = 0;
+    }
     // 通知后端重置该任务
     invoke('timer_reset_task', { taskId: id }).catch(console.error);
     updateLiveValues();
@@ -569,6 +574,10 @@ function resetAll() {
   invoke('timer_reset_all').catch(console.error);
   settings.tasks.forEach(task => {
     countdowns[task.id] = task.interval * 60;
+    if (snoozedStatus[task.id]) {
+      snoozedStatus[task.id].active = false;
+      snoozedStatus[task.id].remaining = 0;
+    }
   });
   isPaused = false;
   invoke('timer_resume').catch(console.error);
@@ -655,9 +664,11 @@ function updateLiveValues() {
       if (timeDisplay) {
         const snoozeState = snoozedStatus[task.id];
         if (snoozeState && snoozeState.active) {
+          card.classList.add('snoozed'); // 动态添加样式类
           timeDisplay.innerText = `推迟中: ${formatTime(snoozeState.remaining)}`;
           timeDisplay.style.color = 'var(--warning)';
         } else {
+          card.classList.remove('snoozed'); // 移除样式类
           timeDisplay.innerText = `(${formatTime(current)})`;
           timeDisplay.style.color = '';
         }

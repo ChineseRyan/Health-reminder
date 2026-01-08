@@ -397,6 +397,7 @@ fn timer_reset_task(task_id: String) {
     if let Some(timer) = state.tasks.get_mut(&task_id) {
         timer.reset_time = now;
         timer.triggered = false;
+        timer.snoozed = false;
         // 如果任务禁用，也更新 disabled_at
         if timer.disabled_at.is_some() {
             timer.disabled_at = Some(now);
@@ -411,6 +412,7 @@ fn timer_reset_all() {
     for timer in state.tasks.values_mut() {
         timer.reset_time = now;
         timer.triggered = false;
+        timer.snoozed = false;
         // 如果任务禁用，也更新 disabled_at
         if timer.disabled_at.is_some() {
             timer.disabled_at = Some(now);

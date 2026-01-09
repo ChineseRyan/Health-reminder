@@ -477,13 +477,18 @@ fn timer_reset_all() {
 #[tauri::command]
 fn timer_snooze_task(task_id: String, minutes: u64) {
     let mut state = get_timer_state().lock().unwrap();
+    let now = Instant::now();
     if let Some(timer) = state.tasks.get_mut(&task_id) {
-        // 增加 reset_time，相当于推迟触发
-        timer.reset_time += Duration::from_secs(minutes * 60);
-        // 如果当前已经触发（triggered=true），需要重置状态以便重新计时？
-        // 如果是在锁屏界面点击 snooze，说明任务已经 triggered 并且正在展示
-        // 我们只需调整 reset_time，主循环会自动计算剩余时间
-        // 但需要把 triggered 设为 false，否则主循环会认为它还在触发状态
+        let snooze_duration = Duration::from_secs(minutes * 60);
+        let total_duration = Duration::from_secs(timer.config.interval * 60);
+
+        // reset_time = now + snooze - total
+        if snooze_duration >= total_duration {
+            timer.reset_time = now + (snooze_duration - total_duration);
+        } else {
+            timer.reset_time = now - (total_duration - snooze_duration);
+        }
+
         timer.triggered = false;
         timer.snoozed = true;
         timer.snooze_count += 1;
@@ -684,10 +689,8 @@ fn start_timer_thread(app_handle: AppHandle) {
                                 icon: timer.config.icon.clone(),
                             });
 
-                            // 重置计时，开始下一轮
-                            timer.reset_time = now;
-                            timer.triggered = false;
-                            timer.snoozed = false;
+                            // 标记为已触发，等待用户操作（重置或推迟）
+                            timer.triggered = true;
                         }
                     }
                 }

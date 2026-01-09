@@ -454,6 +454,7 @@ async function endLockScreen(snoozed = false) {
     const id = lockScreenState.task?.id;
     if (id === 'sit') stats.sitBreaks++;
     if (id === 'water') stats.waterCups++;
+    if (id) resetTask(id);
     saveStats();
   }
 
@@ -547,6 +548,8 @@ function dismissNotification() {
   const id = activePopup.id;
   if (id === 'sit') stats.sitBreaks++;
   if (id === 'water') stats.waterCups++;
+  
+  resetTask(id);
   
   activePopup = null;
   saveStats();
@@ -745,19 +748,25 @@ function updateLiveValues() {
     const cardRefs = domCache.taskCards.get(task.id);
     if (!cardRefs) return;
 
-    const current = countdowns[task.id] || 0;
-    const total = task.interval * 60;
+    let current = countdowns[task.id] || 0;
+    let total = task.interval * 60;
+    const snoozeState = snoozedStatus[task.id];
+    const isSnoozed = snoozeState && snoozeState.active;
+
+    if (isSnoozed) {
+      total = (task.snoozeMinutes || 5) * 60;
+    }
 
     if (cardRefs.miniProgress && total > 0) {
-      const offset = 126 * (1 - current / total);
+      const progress = Math.min(1, Math.max(0, current / total));
+      const offset = 126 * (1 - progress);
       cardRefs.miniProgress.style.strokeDashoffset = offset;
     }
 
     if (cardRefs.timeDisplay) {
-      const snoozeState = snoozedStatus[task.id];
-      if (snoozeState && snoozeState.active) {
+      if (isSnoozed) {
         cardRefs.card.classList.add('snoozed');
-        cardRefs.timeDisplay.innerText = `推迟中 ${formatTime(snoozeState.remaining)}`;
+        cardRefs.timeDisplay.innerText = `推迟中 ${formatTime(current)}`;
         cardRefs.timeDisplay.style.color = 'var(--warning)';
       } else {
         cardRefs.card.classList.remove('snoozed');

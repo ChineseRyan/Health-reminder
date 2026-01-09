@@ -4,7 +4,7 @@
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=flat-square)](https://tauri.app/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.5.2-orange?style=flat-square)](https://github.com/)
+[![Version](https://img.shields.io/badge/Version-1.5.3-orange?style=flat-square)](https://github.com/)
 
 在快节奏的数字时代，健康的身体是高效生产力的基石。**健康办公助手** 是一款基于 Rust 与 Tauri 开发的高性能桌面应用，旨在通过智能化的任务排程与多维提醒，帮助你在专注工作的同时，科学地进行久坐、补水与用眼休息。
 
@@ -12,65 +12,71 @@
 
 ##  展示
 
-### 核心看板 (Dashboard) & 自定义任务排程 (Tasks)
+### 主界面 (Dashboard) & 自定义任务排程 (Tasks)
 
 <p align="center">
   <img src="./docs/screenshots/展示1.png" alt="Dashboard" width="30%">
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
   <img src="./docs/screenshots/展示2.png" alt="Tasks" width="30%">
+
+  <img src="./docs/screenshots/展示3.png" alt="Tasks" width="30%">
 </p>
 
-### 提醒与弹窗 (Notifications)
+### 预告与弹窗 (Notifications)
 
 <p align="center">
-  <img src="./docs/screenshots/notification.png" alt="In-app notification" width="30%">
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="./docs/screenshots/弹窗提醒.png" alt="System notification" width="48%">
+  <img src="./docs/screenshots/预告.png" alt="In-app notification" width="40%">
+
+  <img src="./docs/screenshots/弹窗提醒.png" alt="System notification" width="40%">
 </p>
 
 ### 托盘显示
+
 <p align="center">
   <img width="176" height="184" alt="托盘图标" src="https://github.com/user-attachments/assets/f7b40cf9-bf2e-4459-84f8-72ee05a4a549" />
   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <img width="300" height="196" alt="托盘菜单" src="https://github.com/user-attachments/assets/66c1c52e-d8ef-4d45-afb7-bf01bb21a422" />
+  <img alt="托盘菜单" src="docs\screenshots\托盘菜单.png" />
 </p>
 
 
-### 锁屏功能（选择开启）
+
+### 多显示屏锁屏功能（支持严格模式）
+
+![锁屏](.\docs\screenshots\锁屏.png)
+
+
+
+### 设置界面（简洁&高级设置）
+
+
 
 <p align="center">
-  <img src="./docs/screenshots/锁屏设置.png" alt="Lock screen settings" width="30%">
+  <img src="./docs/screenshots/设置1.png" alt="Dashboard" width="30%">
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="./docs/screenshots/设置2.png" alt="Tasks" width="30%">
+
 </p>
 
-<p align="center">
-  <img src="./docs/screenshots/锁屏.png" alt="Lock screen" width="70%">
-</p>
-
-### 设置界面
-
-<p align="center">
-  <img src="./docs/screenshots/settings.png" alt="设置界面" width="30%">
-</p>
 
 
 ---
 
-## 💎 核心特性
+## 为什么你需要它？
 
-### 1. 科学排程，精准反馈
-- **多任务并行倒计时**：支持久坐、喝水、护眼等多个健康任务同时运行，互不干扰。
-- **可视化进度环**：采用 Apple 风格的环形进度设计，剩余时间一目了然。
-- **一键重置**：支持单个任务点击进度环快速重启，适配灵活的工作节奏。
+### 1. 真的能让你休息
+- **强制锁屏**：到了休息时间，屏幕会自动锁定（支持多显示器），让你不得不放下鼠标，站起来活动一下。
+- **严格模式**：如果你总是忍不住点“跳过”，试试开启严格模式，它会藏起解锁按钮，直到休息结束。
+- **自动解锁**：休息时间一到，屏幕自动解开，不需要你多点一下鼠标，无缝回归工作。
 
-### 2. 深度定制，人性交互
-- **智能预设**：提供 15m / 30m / 45m / 60m 快捷键，极速配置。
-- **动态任务管理**：支持自定义添加新任务、修改标题、删除非核心提醒。
-- **防干扰输入**：重构的局部渲染引擎，确保你在手动修改分钟数时，界面刷新不会干扰你的输入焦点。
+### 2. 贴心不打扰
+- **提前预告**：锁屏前（默认5秒）会弹窗提醒你，让你有时间保存手头的工作，不会被突然打断。
+- **暂时推迟**：正在开会或处理急事？可以点“推迟”再工作几分钟。当然，你可以设置推迟次数上限，防止自己一直拖延。
+- **智能空闲检测**：如果你离开电脑去倒水了，它会自动帮你重置久坐计时，不会等你回来刚坐下又提醒你休息。
 
-### 3. 系统集成，静默运行
-- **原生系统通知**：采用底层 Rust 通讯，支持在最小化到托盘时发送系统级弹窗。
-- **托盘常驻**：支持最小化至任务栏托盘，不占用宝贵的任务栏空间。
-- **开机自启**：集成官方 Autostart 插件，实现一键开启随心启动。
+### 3. 简单好用
+- **多任务并行**：久坐、喝水、护眼，想提醒什么就开什么，互不冲突。
+- **一键设置**：所有设置就在卡片上，点一下小齿轮就能改时间，不用去复杂的菜单里找。
+- **轻量安静**：平时它就安静地待在托盘里，占用资源极低，几乎感觉不到它的存在。
 
 ---
 
@@ -144,6 +150,18 @@ npm run tauri build
 
 > #### scoop 更新命令
 > scoop update health-reminder
+
+### v1.5.3 (2026-01-08)
+- **锁屏保活与修复**：修复了 Windows 10 下强制锁屏窗口可能被最小化或丢失焦点的问题（Watchdog 机制）。
+- **智能推迟 (Snooze)**：新增“推迟”功能，支持自定义每次推迟的时长（默认 5 分钟），并正确显示推迟倒计时。
+- **自动解锁**：新增“倒计时结束自动解锁”选项，无需手动点击确认即可退出锁屏。
+- **严格模式增强**：新增“严格模式允许推迟”选项；严格模式下默认隐藏推迟按钮，且支持设置最大推迟次数。
+- **提醒预告**：新增任务触发前的预告通知（默认提前 5 秒），支持每任务独立配置。
+- **UI/UX 升级**：
+    - **高级设置折叠**：将不常用的系统设置收纳至“高级设置”折叠面板，界面更清爽。
+    - **卡片设置优化**：重构任务卡片底部设置栏，采用 Grid 布局且默认收起，支持一键展开配置。
+    - **右键菜单增强**：托盘右键菜单新增“重置单个任务”子菜单，方便快速操作。
+- **性能优化**：移除高频 Tray Tooltip 更新，显著降低了长期运行的内存占用。
 
 ### v1.5.2 (2026-01-04)
 - **跨平台空闲检测**：新增系统空闲检测功能，支持 Windows、macOS、Linux 三平台。

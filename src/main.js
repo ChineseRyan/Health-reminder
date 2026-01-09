@@ -966,7 +966,7 @@ function renderFullUI() {
         <div class="setting-row">
           <div class="setting-info">
             <label>版本更新</label>
-            <span class="setting-desc">当前版本 v1.5.2${updateInfo ? `（有新版本 v${updateInfo.version}）` : ''}</span>
+            <span class="setting-desc">当前版本 v1.5.3${updateInfo ? `（有新版本 v${updateInfo.version}）` : ''}</span>
           </div>
           <button class="check-update-btn" id="checkUpdateBtn" ${isCheckingUpdate ? 'disabled' : ''}>
             ${isCheckingUpdate ? '<span class="spinner"></span> 检查中...' : (updateInfo ? '立即更新' : '检查更新')}
@@ -1060,7 +1060,7 @@ function renderFullUI() {
       </div>
     </div>
 
-    <div class="footer">健康办公助手 v1.5.2 · 愿你每天都有好身体</div>
+    <div class="footer">健康办公助手 v1.5.3 · 愿你每天都有好身体</div>
 
     ${updateInfo ? `
     <div class="update-banner ${isUpdating ? 'updating' : ''}">

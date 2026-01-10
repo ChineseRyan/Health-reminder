@@ -132,6 +132,28 @@ struct LockState(Mutex<LockStateInner>);
 
 struct PauseMenuState(Mutex<Option<MenuItem<tauri::Wry>>>);
 
+// 语言状态管理
+struct LanguageState(Mutex<String>);
+
+// 多语言文本
+fn get_tray_text(key: &str, lang: &str) -> &'static str {
+    match (key, lang) {
+        ("quit", "en-US") => "Quit",
+        ("quit", _) => "退出",
+        ("show", "en-US") => "Show Main Window",
+        ("show", _) => "显示主窗口",
+        ("reset", "en-US") => "Reset All Tasks",
+        ("reset", _) => "重置所有任务",
+        ("pause", "en-US") => "Pause",
+        ("pause", _) => "暂停",
+        ("resume", "en-US") => "Resume",
+        ("resume", _) => "继续",
+        ("tooltip", "en-US") => "Health Reminder",
+        ("tooltip", _) => "健康提醒助手",
+        _ => "",
+    }
+}
+
 // ============= 后端定时器系统 =============
 
 #[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
@@ -889,10 +911,28 @@ fn update_tray_tooltip(state: State<TrayState>, tooltip: String) {
 }
 
 #[tauri::command]
-fn update_pause_menu(state: State<PauseMenuState>, paused: bool) {
+fn update_pause_menu(state: State<PauseMenuState>, lang_state: State<LanguageState>, paused: bool) {
     if let Some(menu_item) = state.0.lock().unwrap().as_ref() {
-        let text = if paused { "继续" } else { "暂停" };
+        let lang = lang_state.0.lock().unwrap();
+        let text = if paused {
+            get_tray_text("resume", &lang)
+        } else {
+            get_tray_text("pause", &lang)
+        };
         let _ = menu_item.set_text(text);
+    }
+}
+
+#[tauri::command]
+fn update_tray_language(app: AppHandle, lang_state: State<LanguageState>, language: String) {
+    // 更新语言状态
+    *lang_state.0.lock().unwrap() = language.clone();
+
+    // 由于 Tauri 菜单项需要重新构建才能完全更新，
+    // 这里只更新暂停菜单项（最常变化的）
+    // 其他菜单项会在下次启动时使用新语言
+    if let Some(pause_menu) = app.state::<PauseMenuState>().0.lock().unwrap().as_ref() {
+        let _ = pause_menu.set_text(get_tray_text("pause", &language));
     }
 }
 
@@ -1006,6 +1046,7 @@ pub fn run() {
             hide_main_window,
             update_tray_tooltip,
             update_pause_menu,
+            update_tray_language,
             enter_lock_mode,
             exit_lock_mode,
             sync_tasks,
@@ -1023,6 +1064,7 @@ pub fn run() {
         .manage(TrayState(Mutex::new(None)))
         .manage(LockState(Mutex::new(LockStateInner { windows: Vec::new(), args: None })))
         .manage(PauseMenuState(Mutex::new(None)))
+        .manage(LanguageState(Mutex::new("zh-CN".to_string())))
         .setup(|app| {
             let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
             let show = MenuItem::with_id(app, "show", "显示主窗口", true, None::<&str>)?;

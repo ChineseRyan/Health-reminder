@@ -4,6 +4,7 @@ import { enable, disable, isEnabled } from '@tauri-apps/plugin-autostart';
 import { requestPermission } from '@tauri-apps/plugin-notification';
 import { check } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
+import { t, setLocale, getLocale, getSupportedLocales, detectLocale } from './i18n/index.js';
 
 const ICONS = {
   sit: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="M12 6v6l4 2"></path></svg>`,
@@ -16,7 +17,8 @@ const ICONS = {
   plus: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`,
   trash: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`,
   bell: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`,
-  volume: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>`
+  volume: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>`,
+  globe: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`
 };
 
 const DEFAULT_TASKS = [
@@ -39,6 +41,7 @@ let settings = {
   advancedSettingsOpen: false, // 高级设置展开状态
   maxSnoozeCount: 1,   // 最大推迟次数
   allowStrictSnooze: false, // 严格模式下是否允许推迟
+  language: 'zh-CN',   // 界面语言
 };
 
 let countdowns = {};  // 现在由后端事件更新
@@ -140,6 +143,15 @@ async function init() {
 
   await loadSettings();
 
+  // 初始化语言设置
+  if (settings.language) {
+    setLocale(settings.language);
+  } else {
+    // 如果没有保存的语言设置，自动检测
+    settings.language = detectLocale();
+    setLocale(settings.language);
+  }
+
   try {
     settings.autoStart = await isEnabled();
   } catch (e) {
@@ -197,9 +209,9 @@ async function init() {
            if (settings.soundEnabled) {
              invoke('play_notification_sound').catch(() => {});
            }
-           invoke('show_notification', { 
-             title: `即将提醒：${task.title}`, 
-             body: `还有 ${preNotifyTime} 秒将触发提醒，请做好准备。` 
+           invoke('show_notification', {
+             title: t('notification.preNotifyTitle', { title: getTaskDisplayTitle(task) }),
+             body: t('notification.preNotifyBody', { seconds: preNotifyTime })
            }).catch(console.error);
         }
       }
@@ -285,7 +297,7 @@ async function checkForUpdates(manual = false) {
       renderFullUI();
     } else if (manual) {
       // 手动检查且没有更新时显示提示
-      updateMessage = { type: 'success', text: '已是最新版本！' };
+      updateMessage = { type: 'success', text: t('update.upToDate') };
       renderFullUI();
       setTimeout(() => {
         updateMessage = null;
@@ -295,8 +307,8 @@ async function checkForUpdates(manual = false) {
   } catch (e) {
     console.error('Update check failed:', e);
     if (manual) {
-      const errorMsg = e?.response?.data || e?.message || '网络错误，请稍后重试';
-      updateMessage = { type: 'error', text: '检查更新失败：' + errorMsg };
+      const errorMsg = e?.response?.data || e?.message || t('update.networkError');
+      updateMessage = { type: 'error', text: t('update.checkFailed', { error: errorMsg }) };
       renderFullUI();
       setTimeout(() => {
         updateMessage = null;
@@ -374,7 +386,7 @@ async function triggerNotification(task) {
   if (settings.soundEnabled) {
     invoke('play_notification_sound').catch(() => {});
   }
-  invoke('show_notification', { title: task.title, body: task.desc }).catch(console.error);
+  invoke('show_notification', { title: getTaskDisplayTitle(task), body: getTaskDisplayDesc(task) }).catch(console.error);
 
   if (settings.lockScreenEnabled) {
     await startLockScreen(task);
@@ -575,7 +587,7 @@ function dismissNotification() {
 function addTask() {
   const id = 'task_' + Date.now();
   settings.tasks.push({
-    id: id, title: '新提醒', desc: '又是充满活力的一天，记得休息哦~',
+    id: id, title: t('tasks.newTask.title'), desc: t('tasks.newTask.desc'),
     interval: 30, enabled: true, icon: 'bell', lockDuration: 60, autoResetOnIdle: true, preNotificationSeconds: 5, snoozeMinutes: 5
   });
   countdowns[id] = 30 * 60;
@@ -660,9 +672,27 @@ function formatLockTime(seconds) {
   if (seconds >= 60) {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return { time: `${mins}:${String(secs).padStart(2, '0')}`, unit: '分钟' };
+    return { time: `${mins}:${String(secs).padStart(2, '0')}`, unit: t('time.minutes') };
   }
-  return { time: seconds, unit: '秒' };
+  return { time: seconds, unit: t('time.seconds') };
+}
+
+// 获取任务的显示标题（默认任务使用翻译，自定义任务使用用户设置）
+function getTaskDisplayTitle(task) {
+  const defaultTaskIds = ['sit', 'water', 'eye'];
+  if (defaultTaskIds.includes(task.id)) {
+    return t(`tasks.${task.id}.title`);
+  }
+  return task.title;
+}
+
+// 获取任务的显示描述（默认任务使用翻译，自定义任务使用用户设置）
+function getTaskDisplayDesc(task) {
+  const defaultTaskIds = ['sit', 'water', 'eye'];
+  if (defaultTaskIds.includes(task.id)) {
+    return t(`tasks.${task.id}.desc`);
+  }
+  return task.desc;
 }
 
 function cacheDomRefs() {
@@ -690,13 +720,13 @@ function updateTrayTooltip(force = false) {
     return;
   }
 
-  const lines = ['健康提醒助手'];
+  const lines = [t('app.trayTooltip')];
   if (isPaused) {
-    lines.push('(已暂停)');
+    lines.push('(' + t('status.paused') + ')');
   } else {
-    settings.tasks.forEach(t => {
-      if (t.enabled) {
-        lines.push(`${t.title}：${formatTime(countdowns[t.id] ?? 0)}`);
+    settings.tasks.forEach(t_task => {
+      if (t_task.enabled) {
+        lines.push(`${getTaskDisplayTitle(t_task)}：${formatTime(countdowns[t_task.id] ?? 0)}`);
       }
     });
   }
@@ -743,11 +773,11 @@ function updateLiveValues() {
   }
 
   if (domCache.timerLabel) {
-    let statusText = nextTask ? nextTask.title : '无活动任务';
+    let statusText = nextTask ? getTaskDisplayTitle(nextTask) : t('status.noActiveTask');
     if (isPaused) {
-      statusText += ' (已暂停)';
+      statusText += ' (' + t('status.paused') + ')';
     } else if (isIdle) {
-      statusText += ' (空闲中)';
+      statusText += ' (' + t('status.idle') + ')';
     }
     domCache.timerLabel.innerText = statusText;
   }
@@ -782,7 +812,7 @@ function updateLiveValues() {
     if (cardRefs.timeDisplay) {
       if (isSnoozed) {
         cardRefs.card.classList.add('snoozed');
-        cardRefs.timeDisplay.innerText = `推迟中 ${formatTime(current)}`;
+        cardRefs.timeDisplay.innerText = t('status.snoozed') + ' ' + formatTime(current);
         cardRefs.timeDisplay.style.color = 'var(--warning)';
       } else {
         cardRefs.card.classList.remove('snoozed');
@@ -797,16 +827,25 @@ function updateLiveValues() {
 
 function renderFullUI() {
   const app = document.getElementById('app');
+  const locales = getSupportedLocales();
+  const currentLang = getLocale();
+
   app.innerHTML = `
     <div class="header">
-      <h1>健康提醒助手</h1>
-      <p>关爱健康，从每一次提醒开始</p>
+      <h1>${t('app.title')}</h1>
+      <p>${t('app.subtitle')}</p>
+      <div class="language-switcher">
+        <span class="language-icon">${ICONS.globe}</span>
+        <select id="languageSelect">
+          ${locales.map(l => `<option value="${l.code}" ${l.code === currentLang ? 'selected' : ''}>${l.name}</option>`).join('')}
+        </select>
+      </div>
     </div>
 
     <div class="status-bar">
-      <div class="status-item"><div class="icon">${ICONS.sit}</div><div class="value">${stats.sitBreaks}</div><div class="label">休息次数</div></div>
-      <div class="status-item"><div class="icon">${ICONS.water}</div><div class="value">${stats.waterCups}</div><div class="label">喝水次数</div></div>
-      <div class="status-item"><div class="icon">${ICONS.work}</div><div class="value">${stats.workMinutes}</div><div class="label">工作分钟</div></div>
+      <div class="status-item"><div class="icon">${ICONS.sit}</div><div class="value">${stats.sitBreaks}</div><div class="label">${t('stats.sitBreaks')}</div></div>
+      <div class="status-item"><div class="icon">${ICONS.water}</div><div class="value">${stats.waterCups}</div><div class="label">${t('stats.waterCups')}</div></div>
+      <div class="status-item"><div class="icon">${ICONS.work}</div><div class="value">${stats.workMinutes}</div><div class="label">${t('stats.workMinutes')}</div></div>
     </div>
 
     <div class="timer-display">
@@ -814,7 +853,7 @@ function renderFullUI() {
         <svg width="180" height="180" viewBox="0 0 180 180"><circle class="bg" cx="90" cy="90" r="80" /><circle class="progress" cx="90" cy="90" r="80" stroke-dasharray="502" stroke-dashoffset="502" /></svg>
         <div class="time-text"><div class="minutes">00</div><div class="seconds">:00</div></div>
       </div>
-      <div class="timer-label">正在加载...</div>
+      <div class="timer-label">${t('status.loading')}</div>
     </div>
 
     <div class="reminder-cards">
@@ -824,25 +863,25 @@ function renderFullUI() {
         return `
         <div class="reminder-card ${isSnoozed ? 'snoozed' : ''}" data-id="${task.id}">
           <div class="card-main">
-            <div class="progress-mini" style="cursor:pointer;" title="点击重置" data-reset-id="${task.id}">
+            <div class="progress-mini" style="cursor:pointer;" title="${t('taskCard.clickToReset')}" data-reset-id="${task.id}">
               <svg width="44" height="44" viewBox="0 0 44 44"><circle class="bg" cx="22" cy="22" r="20" /><circle class="progress" cx="22" cy="22" r="20" stroke-dasharray="126" stroke-dashoffset="126" /></svg>
               <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:var(--primary); pointer-events:none;">${ICONS[task.icon] || ICONS.bell}</div>
             </div>
             <div class="info">
-              <div class="title" contenteditable="true" data-id="${task.id}">${task.title}</div>
+              <div class="title" contenteditable="${!['sit', 'water', 'eye'].includes(task.id)}" data-id="${task.id}">${getTaskDisplayTitle(task)}</div>
               <div class="time-info">
                 <input type="number" class="interval-input" value="${task.interval}" data-id="${task.id}" min="1" max="1440">
-                <span class="time-unit">分钟</span>
+                <span class="time-unit">${t('time.minutes')}</span>
                 <span class="time-remaining"></span>
               </div>
             </div>
             <div class="card-actions">
               <div class="toggle ${task.enabled ? 'active' : ''}" data-toggle-id="${task.id}"></div>
               <div class="action-row" style="display:flex; gap:8px;">
-                <div class="settings-btn" title="设置" data-settings-id="${task.id}" style="cursor:pointer; color:var(--text-muted); padding:4px;">
+                <div class="settings-btn" title="${t('taskCard.settings')}" data-settings-id="${task.id}" style="cursor:pointer; color:var(--text-muted); padding:4px;">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1.82 1.65h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                 </div>
-                <div class="reset-task-btn" title="重置此任务" data-reset-id="${task.id}" style="cursor:pointer; color:var(--primary); padding:4px;">
+                <div class="reset-task-btn" title="${t('taskCard.resetTask')}" data-reset-id="${task.id}" style="cursor:pointer; color:var(--primary); padding:4px;">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
                 </div>
                 ${!['sit', 'water', 'eye'].includes(task.id) ? `<div class="remove-btn" data-id="${task.id}" style="cursor:pointer; padding:4px;">${ICONS.trash}</div>` : ''}
@@ -851,19 +890,19 @@ function renderFullUI() {
           </div>
           <div class="card-footer">
             <div class="footer-option">
-              <span>预告</span>
+              <span>${t('taskCard.preNotify')}</span>
               <input type="number" class="lock-input pre-notify-input" value="${task.preNotificationSeconds !== undefined ? task.preNotificationSeconds : 5}" data-id="${task.id}" min="0" max="120">
-              <span>秒</span>
+              <span>${t('time.seconds')}</span>
             </div>
             <div class="footer-option">
-              <span>允许推迟</span>
+              <span>${t('taskCard.allowSnooze')}</span>
               <input type="number" class="lock-input snooze-input" value="${task.snoozeMinutes || 5}" data-id="${task.id}" min="1" max="60">
-              <span>分钟</span>
+              <span>${t('time.minutes')}</span>
             </div>
             <div class="footer-option">
-              <span>锁屏时长</span>
+              <span>${t('taskCard.lockDuration')}</span>
               <input type="number" class="lock-input" value="${task.lockDuration || settings.lockDuration}" data-id="${task.id}" min="5" max="3600">
-              <span>秒</span>
+              <span>${t('time.seconds')}</span>
             </div>
           </div>
         </div>
@@ -871,26 +910,26 @@ function renderFullUI() {
       }).join('')}
     </div>
 
-    <button class="add-task-btn" id="addTaskBtn">${ICONS.plus} 添加自定义提醒</button>
+    <button class="add-task-btn" id="addTaskBtn">${ICONS.plus} ${t('buttons.addTask')}</button>
 
     <div class="quick-actions">
-      <button class="btn btn-primary" id="pauseBtn">${isPaused ? ICONS.play : ICONS.pause} ${isPaused ? '继续' : '暂停'}</button>
-      <button class="btn btn-secondary" id="resetBtn">${ICONS.reset} 全部重置</button>
+      <button class="btn btn-primary" id="pauseBtn">${isPaused ? ICONS.play : ICONS.pause} ${isPaused ? t('buttons.resume') : t('buttons.pause')}</button>
+      <button class="btn btn-secondary" id="resetBtn">${ICONS.reset} ${t('buttons.resetAll')}</button>
     </div>
 
     <div class="settings-section">
-      <h3>系统设置</h3>
+      <h3>${t('settings.title')}</h3>
       <div class="setting-row">
         <div class="setting-info">
-          <label>强制休息锁屏</label>
-          <span class="setting-desc">提醒时锁定屏幕，确保真正休息</span>
+          <label>${t('settings.lockScreen')}</label>
+          <span class="setting-desc">${t('settings.lockScreenDesc')}</span>
         </div>
         <div class="toggle ${settings.lockScreenEnabled ? 'active' : ''}" id="lockToggle"></div>
       </div>
       <div class="setting-row">
         <div class="setting-info">
-          <label style="color:var(--danger, #ff4d4f);">严格模式</label>
-          <span class="setting-desc">开启后锁屏界面将隐藏“紧急解锁”按钮，请谨慎开启</span>
+          <label style="color:var(--danger, #ff4d4f);">${t('settings.strictMode')}</label>
+          <span class="setting-desc">${t('settings.strictModeDesc')}</span>
         </div>
         <div class="toggle ${settings.strictMode ? 'active' : ''}" id="strictModeToggle"></div>
       </div>
@@ -898,78 +937,78 @@ function renderFullUI() {
       <div class="setting-row" id="advancedToggle" style="cursor:pointer; opacity:0.7;">
         <div style="display:flex; align-items:center; gap:8px;">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform:${settings.advancedSettingsOpen ? 'rotate(180deg)' : 'rotate(0)'}; transition:transform 0.3s;"><polyline points="6 9 12 15 18 9"></polyline></svg>
-          <span style="font-weight:500; font-size:0.85rem;">高级设置</span>
+          <span style="font-weight:500; font-size:0.85rem;">${t('settings.advanced')}</span>
         </div>
       </div>
 
       <div class="advanced-settings-content" style="display:${settings.advancedSettingsOpen ? 'block' : 'none'};">
-        
+
         <div class="setting-row">
           <div class="setting-info">
-            <label>倒计时结束自动解锁</label>
-            <span class="setting-desc">休息结束后自动退出锁屏，无需手动确认</span>
+            <label>${t('settings.autoUnlock')}</label>
+            <span class="setting-desc">${t('settings.autoUnlockDesc')}</span>
           </div>
           <div class="toggle ${settings.autoUnlock ? 'active' : ''}" id="autoUnlockToggle"></div>
         </div>
 
         <div class="setting-row">
           <div class="setting-info">
-            <label>空闲时重置任务</label>
-            <span class="setting-desc">当用户离开电脑（空闲）时自动重置计时</span>
+            <label>${t('settings.resetOnIdle')}</label>
+            <span class="setting-desc">${t('settings.resetOnIdleDesc')}</span>
           </div>
           <div class="toggle ${settings.resetOnIdle ? 'active' : ''}" id="resetOnIdleToggle"></div>
         </div>
 
         <div class="setting-row">
           <div class="setting-info">
-            <label>严格模式允许推迟</label>
-            <span class="setting-desc">开启后，即使在严格模式下也允许使用推迟功能</span>
+            <label>${t('settings.allowStrictSnooze')}</label>
+            <span class="setting-desc">${t('settings.allowStrictSnoozeDesc')}</span>
           </div>
           <div class="toggle ${settings.allowStrictSnooze ? 'active' : ''}" id="allowStrictSnoozeToggle"></div>
         </div>
 
         <div class="setting-row">
           <div class="setting-info">
-            <label>空闲检测阈值</label>
-            <span class="setting-desc">超过此时间无操作视为空闲${isIdle ? ' (当前空闲中)' : ''}</span>
+            <label>${t('settings.idleThreshold')}</label>
+            <span class="setting-desc">${isIdle ? t('settings.idleThresholdDescIdle') : t('settings.idleThresholdDesc')}</span>
           </div>
           <div class="idle-threshold-input-group">
             <input type="number" class="idle-threshold-input" id="idleThresholdInput" value="${Math.floor(settings.idleThreshold / 60)}" min="1" max="60">
-            <span class="input-unit">分钟</span>
+            <span class="input-unit">${t('time.minutes')}</span>
           </div>
         </div>
 
         <div class="setting-row">
           <div class="setting-info">
-            <label>最大推迟次数</label>
-            <span class="setting-desc">任务触发后允许连续推迟的次数</span>
+            <label>${t('settings.maxSnoozeCount')}</label>
+            <span class="setting-desc">${t('settings.maxSnoozeCountDesc')}</span>
           </div>
           <div class="idle-threshold-input-group">
             <input type="number" class="idle-threshold-input" id="maxSnoozeCountInput" value="${settings.maxSnoozeCount || 1}" min="0" max="10">
-            <span class="input-unit">次</span>
+            <span class="input-unit">${t('time.times')}</span>
           </div>
         </div>
 
         <div class="setting-row">
-          <label>提示音</label>
+          <label>${t('settings.sound')}</label>
           <div style="display:flex; gap:12px; align-items:center;">
-            <button class="preset-btn" id="testSoundBtn" style="padding:4px 8px; display:flex; gap:4px; align-items:center;">${ICONS.volume} 测试</button>
+            <button class="preset-btn" id="testSoundBtn" style="padding:4px 8px; display:flex; gap:4px; align-items:center;">${ICONS.volume} ${t('buttons.test')}</button>
             <div class="toggle ${settings.soundEnabled ? 'active' : ''}" id="soundToggle"></div>
           </div>
         </div>
 
         <div class="setting-row">
-          <label>开机自启动</label>
+          <label>${t('settings.autoStart')}</label>
           <div class="toggle ${settings.autoStart ? 'active' : ''}" id="startToggle"></div>
         </div>
 
         <div class="setting-row">
           <div class="setting-info">
-            <label>版本更新</label>
-            <span class="setting-desc">当前版本 v1.5.3${updateInfo ? `（有新版本 v${updateInfo.version}）` : ''}</span>
+            <label>${t('settings.version')}</label>
+            <span class="setting-desc">${updateInfo ? t('settings.newVersion', { version: updateInfo.version }) : t('settings.currentVersion')}</span>
           </div>
           <button class="check-update-btn" id="checkUpdateBtn" ${isCheckingUpdate ? 'disabled' : ''}>
-            ${isCheckingUpdate ? '<span class="spinner"></span> 检查中...' : (updateInfo ? '立即更新' : '检查更新')}
+            ${isCheckingUpdate ? '<span class="spinner"></span> ' + t('buttons.checking') : (updateInfo ? t('buttons.updateNow') : t('buttons.checkUpdate'))}
           </button>
         </div>
 
@@ -988,15 +1027,15 @@ function renderFullUI() {
     <div class="notification-popup ${activePopup ? 'show' : ''}">
       <div class="notification-content">
         <div class="emoji">${activePopup ? (ICONS[activePopup.icon] || ICONS.bell) : ''}</div>
-        <h2>${activePopup ? activePopup.title : ''}</h2>
-        <p>${activePopup ? activePopup.desc : ''}</p>
+        <h2>${activePopup ? getTaskDisplayTitle(activePopup) : ''}</h2>
+        <p>${activePopup ? getTaskDisplayDesc(activePopup) : ''}</p>
         <div style="display:flex; justify-content:center; gap:10px;">
-          <button class="btn btn-primary" id="dismissBtn">我知道了</button>
+          <button class="btn btn-primary" id="dismissBtn">${t('buttons.gotIt')}</button>
           ${(() => {
             const count = (activePopup && snoozedStatus[activePopup.id]) ? snoozedStatus[activePopup.id].count : 0;
             const isStrictRestricted = settings.strictMode && !settings.allowStrictSnooze;
             if (count < settings.maxSnoozeCount && !isStrictRestricted) {
-              return `<button class="btn btn-secondary" id="popupSnoozeBtn">推迟 ${activePopup ? (activePopup.snoozeMinutes || 5) : 5} 分钟</button>`;
+              return `<button class="btn btn-secondary" id="popupSnoozeBtn">${t('buttons.snooze', { minutes: activePopup ? (activePopup.snoozeMinutes || 5) : 5 })}</button>`;
             }
             return '';
           })()}
@@ -1020,15 +1059,15 @@ function renderFullUI() {
           <div class="center-content">
             <div class="lock-icon">${lockScreenState.task ? (ICONS[lockScreenState.task.icon] || ICONS.bell) : ICONS.eye}</div>
             <div class="lock-seconds">${lockScreenState.waitingConfirm ? '✓' : formatLockTime(lockScreenState.remaining).time}</div>
-            <div class="lock-unit">${lockScreenState.waitingConfirm ? '完成' : formatLockTime(lockScreenState.remaining).unit}</div>
+            <div class="lock-unit">${lockScreenState.waitingConfirm ? t('buttons.confirmRest').split(' ')[0] : formatLockTime(lockScreenState.remaining).unit}</div>
           </div>
         </div>
-        <div class="lock-title">${lockScreenState.waitingConfirm ? '休息时间到！' : (lockScreenState.task?.title || '休息时间')}</div>
-        <div class="lock-message">${lockScreenState.waitingConfirm ? '您完成休息了吗？点击下方按钮确认~' : (lockScreenState.task?.desc || '让身体和眼睛休息一下吧~')}</div>
+        <div class="lock-title">${lockScreenState.waitingConfirm ? t('lockScreen.timeUp') : (lockScreenState.task ? getTaskDisplayTitle(lockScreenState.task) : t('lockScreen.restTime'))}</div>
+        <div class="lock-message">${lockScreenState.waitingConfirm ? t('lockScreen.confirmMessage') : (lockScreenState.task ? getTaskDisplayDesc(lockScreenState.task) : t('lockScreen.restMessage'))}</div>
         ${lockScreenState.waitingConfirm ? `
         <button class="confirm-btn" id="confirmBtn">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-          已完成休息
+          ${t('buttons.confirmRest')}
         </button>
         ` : `
         ${settings.strictMode ? '' : `
@@ -1036,22 +1075,22 @@ function renderFullUI() {
           <div class="unlock-progress"></div>
           <div class="unlock-text">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
-            长按 3 秒紧急解锁
+            ${t('lockScreen.emergencyUnlock')}
           </div>
         </button>
         `}
         ${(() => {
           const count = (lockScreenState.task && snoozedStatus[lockScreenState.task.id]) ? snoozedStatus[lockScreenState.task.id].count : 0;
           const isStrictRestricted = settings.strictMode && !settings.allowStrictSnooze;
-          
+
           if (count >= settings.maxSnoozeCount) {
-            return '<div style="color:rgba(255,255,255,0.5); font-size:0.8rem; margin-top:15px;">已达推迟上限</div>';
+            return '<div style="color:rgba(255,255,255,0.5); font-size:0.8rem; margin-top:15px;">' + t('lockScreen.snoozeLimit') + '</div>';
           } else if (isStrictRestricted) {
-            return '<div style="color:rgba(255,255,255,0.5); font-size:0.8rem; margin-top:15px;">严格模式已禁用推迟</div>';
+            return '<div style="color:rgba(255,255,255,0.5); font-size:0.8rem; margin-top:15px;">' + t('lockScreen.strictDisabled') + '</div>';
           } else {
             return `
             <button id="lockSnoozeBtn" style="margin-top:15px; background:rgba(255,255,255,0.2); border:none; padding:8px 16px; border-radius:20px; color:white; font-size:14px; cursor:pointer;">
-              💤 推迟 ${lockScreenState.task ? (lockScreenState.task.snoozeMinutes || 5) : 5} 分钟
+              💤 ${t('buttons.snooze', { minutes: lockScreenState.task ? (lockScreenState.task.snoozeMinutes || 5) : 5 })}
             </button>
             `;
           }
@@ -1060,16 +1099,16 @@ function renderFullUI() {
       </div>
     </div>
 
-    <div class="footer">健康办公助手 v1.5.3 · 愿你每天都有好身体</div>
+    <div class="footer">${t('app.footer')}</div>
 
     ${updateInfo ? `
     <div class="update-banner ${isUpdating ? 'updating' : ''}">
       <div class="update-content">
         <div class="update-info">
           <span class="update-icon">🎉</span>
-          <span class="update-text">${isUpdating ? '正在更新...' : `发现新版本 v${updateInfo.version}`}</span>
+          <span class="update-text">${isUpdating ? t('update.updating') : t('update.newVersion', { version: updateInfo.version })}</span>
         </div>
-        ${!isUpdating ? `<button class="update-btn" id="updateBtn">立即更新</button>` : `<div class="update-spinner"></div>`}
+        ${!isUpdating ? `<button class="update-btn" id="updateBtn">${t('buttons.updateNow')}</button>` : `<div class="update-spinner"></div>`}
       </div>
     </div>
     ` : ''}
@@ -1344,6 +1383,20 @@ function bindEvents() {
         settings.maxSnoozeCount = count;
         saveSettings();
       }
+    });
+  }
+
+  // 语言切换事件
+  const languageSelect = document.getElementById('languageSelect');
+  if (languageSelect) {
+    languageSelect.addEventListener('change', (e) => {
+      const newLocale = e.target.value;
+      settings.language = newLocale;
+      setLocale(newLocale);
+      saveSettings();
+      // 通知后端更新托盘菜单语言
+      invoke('update_tray_language', { language: newLocale }).catch(() => {});
+      renderFullUI();
     });
   }
 }

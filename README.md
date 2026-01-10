@@ -1,5 +1,7 @@
 # 健康办公助手 (Health Reminder)
 
+**中文** | [English](./README.en.md)
+
 > **极简、精准、高效。为现代办公族量身定制的健康守护小程序。**
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=flat-square)](https://tauri.app/)

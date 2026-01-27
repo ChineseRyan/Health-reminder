@@ -100,13 +100,13 @@ This product pursues minimal memory usage and startup speed:
 
 ### Option 1. Installer Package
 
-You can directly go to [GitHub Releases](https://github.com/kaima2022/desk-reminder/releases) to download the latest installer for your system. Supports Windows (.exe), macOS (.dmg), and Linux (.deb, .AppImage).
+You can directly go to [GitHub Releases](https://github.com/kaima2022/Health-reminder/releases) to download the latest installer for your system. Supports Windows (.exe), macOS (.dmg), and Linux (.deb, .AppImage).
 
 ### Option 2. Windows Scoop Install or Update
 
 ```powershell
 # Add bucket (first time only)
-scoop bucket add health-reminder https://github.com/kaima2022/desk-reminder
+scoop bucket add health-reminder https://github.com/kaima2022/Health-reminder
 
 # Install
 scoop install health-reminder

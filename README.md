@@ -102,13 +102,13 @@
 
 ### 方式1.安装包
 
-您可以直接前往 [GitHub Releases](https://github.com/kaima2022/desk-reminder/releases) 页面下载适用于您系统的最新版安装包。支持 Windows (.exe), macOS (.dmg), 以及 Linux (.deb, .AppImage)。
+您可以直接前往 [GitHub Releases](https://github.com/kaima2022/Health-reminder/releases) 页面下载适用于您系统的最新版安装包。支持 Windows (.exe), macOS (.dmg), 以及 Linux (.deb, .AppImage)。
 
 ### 方式2. Windows Scoop 安装或更新
 
 ```powershell
 # 添加 bucket（首次安装）
-scoop bucket add health-reminder https://github.com/kaima2022/desk-reminder
+scoop bucket add health-reminder https://github.com/kaima2022/Health-reminder
 
 # 安装
 scoop install health-reminder

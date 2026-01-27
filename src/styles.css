@@ -887,6 +887,58 @@ body {
   animation: slideUp 0.3s ease;
 }
 
+/* 空闲重置通知横幅 */
+.idle-reset-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+  padding: 12px 24px;
+  z-index: 900;
+  animation: slideUp 0.3s ease;
+}
+
+.idle-reset-content {
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.idle-reset-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+}
+
+.idle-reset-icon {
+  font-size: 1.25rem;
+}
+
+.idle-reset-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.idle-reset-btn {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.idle-reset-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
 @keyframes slideUp {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }

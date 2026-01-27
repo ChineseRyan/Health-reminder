@@ -71,6 +71,7 @@ let updateInfo = null;
 let isUpdating = false;
 let isCheckingUpdate = false;
 let updateMessage = null;
+let showIdleResetBanner = false;  // 显示空闲重置通知横幅
 
 let domCache = null;
 let isUiSuspended = false;
@@ -246,7 +247,15 @@ async function init() {
   // 监听空闲状态变化
   listen('idle-status-changed', (event) => {
     const status = event.payload;
+    const wasIdle = isIdle;
     isIdle = status.is_idle;
+
+    // 刚进入空闲状态时，显示横幅通知
+    if (isIdle && !wasIdle && settings.resetOnIdle) {
+      showIdleResetBanner = true;
+      renderFullUI();
+    }
+
     if (!isUiSuspended) {
       updateLiveValues();
     } else {
@@ -1218,6 +1227,18 @@ function renderFullUI() {
 
     <div class="footer">${t('app.footer')}</div>
 
+    ${showIdleResetBanner ? `
+    <div class="idle-reset-banner">
+      <div class="idle-reset-content">
+        <div class="idle-reset-info">
+          <span class="idle-reset-icon">😴</span>
+          <span class="idle-reset-text">${t('idle.resetNotice')}</span>
+        </div>
+        <button class="idle-reset-btn" id="idleResetDismissBtn">${t('buttons.gotIt')}</button>
+      </div>
+    </div>
+    ` : ''}
+
     ${updateInfo ? `
     <div class="update-banner ${isUpdating ? 'updating' : ''}">
       <div class="update-content">
@@ -1466,6 +1487,15 @@ function bindEvents() {
   const updateBtn = document.getElementById('updateBtn');
   if (updateBtn) {
     updateBtn.addEventListener('click', performUpdate);
+  }
+
+  // 空闲重置横幅关闭按钮
+  const idleResetDismissBtn = document.getElementById('idleResetDismissBtn');
+  if (idleResetDismissBtn) {
+    idleResetDismissBtn.addEventListener('click', () => {
+      showIdleResetBanner = false;
+      renderFullUI();
+    });
   }
 
   const checkUpdateBtn = document.getElementById('checkUpdateBtn');

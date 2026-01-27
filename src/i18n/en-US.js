@@ -121,6 +121,11 @@ export default {
     snoozed: 'Snoozed',
   },
 
+  // Idle
+  idle: {
+    resetNotice: 'Idle detected, tasks reset and paused',
+  },
+
   // Notifications
   notification: {
     preNotifyTitle: 'Upcoming: {title}',

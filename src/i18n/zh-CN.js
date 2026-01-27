@@ -121,6 +121,11 @@ export default {
     snoozed: '推迟中',
   },
 
+  // 空闲
+  idle: {
+    resetNotice: '检测到空闲，任务已重置并暂停',
+  },
+
   // 通知
   notification: {
     preNotifyTitle: '即将提醒：{title}',

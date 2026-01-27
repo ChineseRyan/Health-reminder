@@ -6,7 +6,7 @@ export default {
   app: {
     title: 'Health Reminder',
     subtitle: 'Care for your health, one reminder at a time',
-    footer: 'Health Reminder v1.5.7 · Wishing you good health every day',
+    footer: 'Health Reminder v1.5.9 · Wishing you good health every day',
     trayTooltip: 'Health Reminder',
   },
 
@@ -97,8 +97,8 @@ export default {
     sound: 'Notification Sound',
     autoStart: 'Start on Boot',
     version: 'Version Update',
-    currentVersion: 'Current version v1.5.7',
-    newVersion: 'Current version v1.5.7 (New version v{version} available)',
+    currentVersion: 'Current version v1.5.9',
+    newVersion: 'Current version v1.5.9 (New version v{version} available)',
     language: 'Language',
   },
 

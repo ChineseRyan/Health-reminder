@@ -6,7 +6,7 @@
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=flat-square)](https://tauri.app/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.5.7-orange?style=flat-square)](https://github.com/)
+[![Version](https://img.shields.io/badge/Version-1.5.9-orange?style=flat-square)](https://github.com/)
 
 In today's fast-paced digital era, a healthy body is the cornerstone of high productivity. **Health Reminder** is a high-performance desktop application built with Rust and Tauri, designed to help you take breaks from sitting, stay hydrated, and rest your eyes through intelligent task scheduling and multi-dimensional reminders.
 
@@ -46,7 +46,8 @@ In today's fast-paced digital era, a healthy body is the cornerstone of high pro
 
 ![Lock Screen](./docs/screenshots/锁屏.png)
 
-
+### Idle Detection - Auto Pause and Reset When Idle
+![Idle Detection](./docs/screenshots/空闲检测.png)
 
 ### Settings Interface (Simple & Advanced Settings)
 
@@ -152,6 +153,16 @@ npm run tauri build
 
 > #### Scoop update command
 > scoop update health-reminder
+
+### v1.5.9 (2026-01-27)
+- **Idle Reset Notification Banner**: Added a beautiful purple notification banner that appears when idle is detected and tasks are reset. Click "Got It" to dismiss.
+- **UI Optimization**: Moved "Idle Detection Threshold" setting below the "Reset & Pause Tasks When Idle" toggle. The threshold setting is now hidden when the toggle is off, resulting in a cleaner interface.
+- **Wording Improvement**: Renamed "Reset Tasks When Idle" to "Reset & Pause Tasks When Idle" for more accurate description of the feature behavior.
+
+### v1.5.8 (2026-01-20)
+- **Timer Fix**: Fixed an issue where other disabled tasks' remaining time would abnormally increase after snoozing a task (affected timer_resume, timer_set_system_locked, and timer_set_lock_screen_active time compensation logic).
+- **Scoop Installation Fix**: Fixed incorrect URL and hash placement in Scoop bucket file that prevented installation.
+- **CI/CD Fix**: Fixed GitHub Action bucket update script not correctly updating architecture.64bit.url and hash.
 
 ### v1.5.7 (2026-01-16)
 - **Merge Tasks Feature**: Added "Merge Tasks" functionality. When multiple tasks are about to trigger close together (configurable threshold), the system proactively merges them into a single break session. This prevents constant interruptions and solves the annoyance of "just sat down and another alarm rings".

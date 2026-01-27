@@ -6,7 +6,7 @@
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=flat-square)](https://tauri.app/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.5.7-orange?style=flat-square)](https://github.com/)
+[![Version](https://img.shields.io/badge/Version-1.5.9-orange?style=flat-square)](https://github.com/)
 
 在快节奏的数字时代，健康的身体是高效生产力的基石。**健康办公助手** 是一款基于 Rust 与 Tauri 开发的高性能桌面应用，旨在通过智能化的任务排程与多维提醒，帮助你在专注工作的同时，科学地进行久坐、补水与用眼休息。
 
@@ -46,6 +46,8 @@
 
 ![锁屏](./docs/screenshots/锁屏.png)
 
+### 空闲监测功能-空闲时自动暂停并且重置
+![空闲监测](./docs/screenshots/空闲检测.png)
 
 
 ### 设置界面（简洁&高级设置）
@@ -152,6 +154,16 @@ npm run tauri build
 
 > #### scoop 更新命令
 > scoop update health-reminder
+
+### v1.5.9 (2026-01-27)
+- **空闲重置通知横幅**：新增空闲检测横幅通知，当检测到用户空闲并重置任务时，显示美观的紫色通知横幅，点击"知道了"关闭。
+- **UI 优化**：将"空闲检测阈值"设置移至"空闲时重置并暂停任务"开关下方，开关关闭时自动隐藏阈值设置，界面更简洁。
+- **文案优化**：将"空闲时重置任务"更名为"空闲时重置并暂停任务"，更准确描述功能行为。
+
+### v1.5.8 (2026-01-20)
+- **计时器修复**：修复了推迟任务后，其他禁用任务的剩余时间异常增长的问题（涉及 timer_resume、timer_set_system_locked、timer_set_lock_screen_active 三处时间补偿逻辑）。
+- **Scoop 安装修复**：修复了 Scoop bucket 文件中 URL 和 hash 位置错误导致无法安装的问题。
+- **CI/CD 修复**：修复了 GitHub Action 中 bucket 更新脚本未正确更新 architecture.64bit.url 和 hash 的问题。
 
 ### v1.5.7 (2026-01-16)
 - **合并任务功能 (Merge Tasks)**：新增“合并任务”功能，当多个任务临近触发时（可设置阈值），系统会智能地将其合并为一次休息，避免连续不断的打断，彻底解决“刚坐下又响了”的烦恼。

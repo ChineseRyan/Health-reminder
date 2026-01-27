@@ -47,7 +47,9 @@ In today's fast-paced digital era, a healthy body is the cornerstone of high pro
 ![Lock Screen](./docs/screenshots/锁屏.png)
 
 ### Idle Detection - Auto Pause and Reset When Idle
-![Idle Detection](./docs/screenshots/空闲监测.png)
+<p align="center">
+  <img src="./docs/screenshots/空闲监测.png" alt="Dashboard" width="30%">
+</p>
 
 ### Settings Interface (Simple & Advanced Settings)
 

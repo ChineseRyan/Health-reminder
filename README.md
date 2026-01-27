@@ -47,7 +47,10 @@
 ![锁屏](./docs/screenshots/锁屏.png)
 
 ### 空闲监测功能-空闲时自动暂停并且重置
-![空闲监测](./docs/screenshots/空闲监测.png)
+<p align="center">
+  <img src="./docs/screenshots/空闲监测.png" alt="Dashboard" width="30%">
+</p>
+
 
 
 ### 设置界面（简洁&高级设置）

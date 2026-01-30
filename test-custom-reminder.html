@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自定义提醒功能测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background: #e8f5e8;
+            color: #2e7d2e;
+            border: 1px solid #4caf50;
+        }
+        .error {
+            background: #ffeaea;
+            color: #d32f2f;
+            border: 1px solid #f44336;
+        }
+        .info {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #2196f3;
+        }
+        button {
+            background: #007aff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #005bb5;
+        }
+        .feature-demo {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin: 10px 0;
+        }
+        .counter-display {
+            background: #007aff;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 自定义提醒功能测试</h1>
+    
+    <div class="test-section">
+        <h2>📋 功能说明</h2>
+        <p>自定义提醒功能允许用户设置：</p>
+        <ul>
+            <li><strong>N值：</strong>每N次事件后触发提醒</li>
+            <li><strong>XX事件：</strong>选择"久坐"、"喝水"或"护眼"提醒</li>
+            <li><strong>YY提示语：</strong>自定义提醒内容</li>
+        </ul>
+        <p>当达到设定的次数时，会显示特殊的自定义提醒弹窗。</p>
+    </div>
+
+    <div class="test-section">
+        <h2>🧪 功能测试</h2>
+        
+        <div class="feature-demo">
+            <button onclick="simulateEvent('sit')">模拟久坐提醒</button>
+            <button onclick="simulateEvent('water')">模拟喝水提醒</button>
+            <button onclick="simulateEvent('eye')">模拟护眼提醒</button>
+            <span id="counter-display" class="counter-display">计数: 0</span>
+        </div>
+        
+        <div class="feature-demo">
+            <button onclick="resetCounters()">重置计数器</button>
+            <button onclick="addTestReminder()">添加测试提醒</button>
+            <button onclick="clearResults()">清除结果</button>
+        </div>
+        
+        <div id="test-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 测试数据</h2>
+        <div id="test-data">
+            <p>本地存储中的自定义提醒配置：</p>
+            <pre id="reminders-data">加载中...</pre>
+            <p>事件计数器：</p>
+            <pre id="counters-data">加载中...</pre>
+        </div>
+    </div>
+
+    <script>
+        // 模拟事件计数器
+        let eventCounters = { sit: 0, water: 0, eye: 0 };
+        let customReminders = [];
+        
+        // 事件名称映射
+        const eventNames = {
+            sit: '久坐提醒',
+            water: '喝水提醒',
+            eye: '护眼提醒'
+        };
+        
+        // 初始化
+        function init() {
+            loadData();
+            updateDisplay();
+            showResult('测试环境已初始化', 'info');
+        }
+        
+        // 从localStorage加载数据
+        function loadData() {
+            try {
+                const settings = JSON.parse(localStorage.getItem('healthReminder_settings') || '{}');
+                customReminders = settings.customReminders || [];
+                
+                const counters = JSON.parse(localStorage.getItem('healthReminder_eventCounters') || '{}');
+                eventCounters = counters || { sit: 0, water: 0, eye: 0 };
+                
+                updateDataDisplay();
+            } catch (error) {
+                showResult('加载数据失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 更新数据显示
+        function updateDataDisplay() {
+            document.getElementById('reminders-data').textContent = JSON.stringify(customReminders, null, 2);
+            document.getElementById('counters-data').textContent = JSON.stringify(eventCounters, null, 2);
+        }
+        
+        // 模拟事件触发
+        function simulateEvent(eventType) {
+            eventCounters[eventType]++;
+            saveCounters();
+            
+            const count = eventCounters[eventType];
+            showResult(`触发了 ${eventNames[eventType]} - 第 ${count} 次`, 'info');
+            
+            // 检查自定义提醒
+            checkCustomReminders(eventType, count);
+            
+            updateDisplay();
+        }
+        
+        // 检查自定义提醒
+        function checkCustomReminders(eventType, count) {
+            customReminders.forEach(reminder => {
+                if (reminder.enabled && reminder.eventType === eventType && count % reminder.frequency === 0) {
+                    showCustomReminder(reminder, count);
+                }
+            });
+        }
+        
+        // 显示自定义提醒
+        function showCustomReminder(reminder, count) {
+            const message = reminder.message.replace('{count}', count);
+            const title = `已达到 ${count} 次${eventNames[reminder.eventType]}`;
+            
+            showResult(`🎯 自定义提醒触发！<br><strong>${title}</strong><br>${message}`, 'success');
+            
+            // 模拟弹窗效果
+            alert(`🎯 自定义提醒\n${title}\n${message}`);
+        }
+        
+        // 添加测试提醒
+        function addTestReminder() {
+            const testReminder = {
+                eventType: 'sit',
+                frequency: 3,
+                message: '太棒了！你已经完成了{count}次久坐提醒，记得站起来活动一下！',
+                enabled: true
+            };
+            
+            customReminders.push(testReminder);
+            saveReminders();
+            
+            showResult('已添加测试提醒：每3次久坐提醒后触发', 'success');
+            updateDataDisplay();
+        }
+        
+        // 重置计数器
+        function resetCounters() {
+            eventCounters = { sit: 0, water: 0, eye: 0 };
+            saveCounters();
+            updateDisplay();
+            showResult('计数器已重置', 'info');
+        }
+        
+        // 保存数据
+        function saveReminders() {
+            try {
+                const settings = JSON.parse(localStorage.getItem('healthReminder_settings') || '{}');
+                settings.customReminders = customReminders;
+                localStorage.setItem('healthReminder_settings', JSON.stringify(settings));
+            } catch (error) {
+                showResult('保存提醒失败: ' + error.message, 'error');
+            }
+        }
+        
+        function saveCounters() {
+            try {
+                localStorage.setItem('healthReminder_eventCounters', JSON.stringify(eventCounters));
+            } catch (error) {
+                showResult('保存计数器失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 更新显示
+        function updateDisplay() {
+            const totalCount = eventCounters.sit + eventCounters.water + eventCounters.eye;
+            document.getElementById('counter-display').textContent = `总计: ${totalCount}`;
+            updateDataDisplay();
+        }
+        
+        // 显示结果
+        function showResult(message, type) {
+            const resultsDiv = document.getElementById('test-results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${type}`;
+            resultDiv.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            resultsDiv.insertBefore(resultDiv, resultsDiv.firstChild);
+            
+            // 限制显示数量
+            while (resultsDiv.children.length > 10) {
+                resultsDiv.removeChild(resultsDiv.lastChild);
+            }
+        }
+        
+        // 清除结果
+        function clearResults() {
+            document.getElementById('test-results').innerHTML = '';
+        }
+        
+        // 页面加载完成后初始化
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

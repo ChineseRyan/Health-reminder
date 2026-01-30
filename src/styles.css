@@ -1127,3 +1127,201 @@ body {
   font-size: 0.875rem;
   color: var(--text-muted);
 }
+
+/* 自定义提醒样式 */
+.custom-reminder-config {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.custom-reminder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.custom-reminders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.custom-reminder-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
+}
+
+.custom-reminder-item:hover {
+  background: var(--bg-hover);
+  border-color: var(--primary);
+}
+
+.custom-reminder-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex: 1;
+}
+
+.custom-reminder-item select,
+.custom-reminder-item input[type="number"],
+.custom-reminder-item input[type="text"],
+.custom-reminder-controls select,
+.custom-reminder-controls input[type="number"],
+.custom-reminder-message {
+  padding: 6px 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: var(--text);
+  transition: all 0.2s ease;
+}
+
+.custom-reminder-item select:focus,
+.custom-reminder-item input:focus,
+.custom-reminder-controls select:focus,
+.custom-reminder-controls input:focus,
+.custom-reminder-message:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+}
+
+.custom-reminder-controls select {
+  min-width: 80px;
+}
+
+.custom-reminder-controls input[type="number"] {
+  width: 60px;
+  text-align: center;
+}
+
+.frequency-label {
+  white-space: nowrap;
+}
+
+.custom-reminder-message {
+  flex: 1;
+  min-width: 120px;
+}
+
+.delete-reminder-btn {
+  padding: 4px 8px;
+  color: var(--danger);
+}
+
+.custom-reminder-item .toggle {
+  margin-left: auto;
+}
+
+.custom-reminder-item button[data-action="delete-reminder"],
+.delete-reminder-btn {
+  background: transparent;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.custom-reminder-item button[data-action="delete-reminder"]:hover,
+.delete-reminder-btn:hover {
+  background: var(--danger);
+  color: white;
+  transform: scale(1.05);
+}
+
+#addCustomReminderBtn {
+  background: var(--success);
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#addCustomReminderBtn:hover {
+  background: #2bb34a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(52, 199, 89, 0.3);
+}
+
+/* 自定义提醒弹窗样式 */
+.custom-reminder-popup {
+  background: linear-gradient(135deg, var(--primary), var(--success));
+  color: white;
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 8px 25px rgba(0, 122, 255, 0.4);
+  animation: customReminderPulse 2s infinite;
+}
+
+@keyframes customReminderPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+.custom-reminder-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.custom-reminder-message {
+  font-size: 1rem;
+  line-height: 1.5;
+  opacity: 0.95;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 12px 16px;
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+}
+
+.custom-reminder-count {
+  font-size: 2rem;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  margin: 8px 0;
+}
+
+/* 事件计数器显示 */
+.event-counter-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--primary);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.event-counter-display::before {
+  content: "🔢";
+  font-size: 0.875rem;
+}

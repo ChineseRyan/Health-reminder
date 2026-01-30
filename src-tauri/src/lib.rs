@@ -956,6 +956,20 @@ fn update_tray_tooltip(state: State<TrayState>, tooltip: String) {
 }
 
 #[tauri::command]
+fn show_reminder_window(window: tauri::Window) {
+    let _ = window.unminimize();
+    let _ = window.show();
+    let _ = window.set_focus();
+    let _ = window.center();
+    let _ = window.set_always_on_top(true);
+}
+
+#[tauri::command]
+fn reset_window_state(window: tauri::Window) {
+    let _ = window.set_always_on_top(false);
+}
+
+#[tauri::command]
 fn update_pause_menu(state: State<PauseMenuState>, lang_state: State<LanguageState>, paused: bool) {
     if let Some(menu_item) = state.0.lock().unwrap().as_ref() {
         let lang = lang_state.0.lock().unwrap();
@@ -1110,7 +1124,14 @@ pub fn run() {
             timer_set_lock_screen_active,
             set_idle_threshold,
             get_idle_threshold,
+            show_reminder_window,
+            reset_window_state,
         ])
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            let _ = app.get_webview_window("main")
+                .expect("no main window")
+                .set_focus();
+        }))
         .manage(TrayState(Mutex::new(None)))
         .manage(LockState(Mutex::new(LockStateInner { windows: Vec::new(), args: None })))
         .manage(PauseMenuState(Mutex::new(None)))

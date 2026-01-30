@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { enable, disable, isEnabled } from '@tauri-apps/plugin-autostart';
-import { requestPermission } from '@tauri-apps/plugin-notification';
+import { requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
 import { check } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
 import { t, setLocale, getLocale, getSupportedLocales, detectLocale } from './i18n/index.js';
@@ -44,6 +44,7 @@ let settings = {
   enableMerge: true,  // 是否合并临近任务
   mergeThreshold: 60,  // 合并阈值（秒）
   language: 'zh-CN',   // 界面语言
+  customReminders: [], // 自定义提醒配置
 };
 
 let countdowns = {};  // 现在由后端事件更新
@@ -52,6 +53,12 @@ let stats = {
   sitBreaks: 0,
   waterCups: 0,
   workMinutes: 0,
+};
+
+let eventCounters = {
+  sit: 0,
+  water: 0,
+  eye: 0,
 };
 let isPaused = false;
 let isIdle = false;  // 当前是否处于空闲状态
@@ -214,10 +221,10 @@ async function init() {
            if (settings.soundEnabled) {
              invoke('play_notification_sound').catch(() => {});
            }
-           invoke('show_notification', {
+           sendNotification({
              title: t('notification.preNotifyTitle', { title: getTaskDisplayTitle(task) }),
              body: t('notification.preNotifyBody', { seconds: preNotifyTime })
-           }).catch(console.error);
+           });
         }
       }
     });
@@ -281,6 +288,11 @@ async function init() {
 
   listen('system-unlocked', () => {
     invoke('timer_set_system_locked', { locked: false }).catch(console.error);
+  });
+
+  // 监听通知点击事件
+  listen('notification:clicked', () => {
+    invoke('show_reminder_window').catch(console.error);
   });
 
   // 每秒更新工作时间统计（这个保留在前端）
@@ -380,6 +392,15 @@ async function loadSettings() {
       stats = parsed.stats;
     }
   }
+  
+  // 加载事件计数器
+  const savedEventCounters = localStorage.getItem('reminder_event_counters');
+  if (savedEventCounters) {
+    const parsed = JSON.parse(savedEventCounters);
+    if (parsed.date === new Date().toDateString()) {
+      eventCounters = parsed.counters;
+    }
+  }
 }
 
 async function saveSettings() {
@@ -393,12 +414,95 @@ function saveStats() {
   }));
 }
 
+function saveEventCounters() {
+  localStorage.setItem('reminder_event_counters', JSON.stringify({
+    date: new Date().toDateString(),
+    counters: eventCounters,
+  }));
+}
+
 // tick 函数已移至 Rust 后端，不再需要前端定时器
+
+// 处理事件计数和自定义提醒
+function handleEventCounter(taskId) {
+  // 增加事件计数
+  if (eventCounters.hasOwnProperty(taskId)) {
+    eventCounters[taskId]++;
+    saveEventCounters(); // 保存计数器
+    
+    // 检查自定义提醒
+    settings.customReminders.forEach(reminder => {
+      if (reminder.eventType === taskId && reminder.enabled) {
+        const currentCount = eventCounters[taskId];
+        if (currentCount % reminder.frequency === 0) {
+          // 触发自定义提醒
+          showCustomReminder(reminder, currentCount);
+        }
+      }
+    });
+  }
+}
+
+// 显示自定义提醒
+function showCustomReminder(reminder, count) {
+  const message = reminder.message.replace('{count}', count);
+  
+  if (settings.soundEnabled) {
+    invoke('play_notification_sound').catch(() => {});
+  }
+  
+  sendNotification({
+    title: `提醒：已达到${count}次${getEventTypeName(reminder.eventType)}`,
+    body: message
+  });
+  
+  // 在现有提醒界面中显示自定义提醒内容
+  showCustomReminderInPopup(reminder, count);
+}
+
+// 在现有提醒界面中显示自定义提醒内容
+function showCustomReminderInPopup(reminder, count) {
+  const eventTypeName = getEventTypeName(reminder.eventType);
+  const message = reminder.message.replace('{count}', count);
+  
+  // 创建自定义提醒弹窗
+  const customPopup = {
+    id: 'custom_reminder_' + Date.now(),
+    title: `已达到${count}次${eventTypeName}`,
+    desc: message,
+    icon: reminder.eventType,
+    count: count,
+    isCustomReminder: true
+  };
+  
+  // 如果当前没有活动弹窗，直接显示
+  if (!activePopup) {
+    invoke('show_reminder_window').catch(console.error);
+    activePopup = customPopup;
+    renderFullUI();
+  } else {
+    // 如果有活动弹窗，加入队列
+    taskQueue.push(customPopup);
+  }
+}
+
+// 获取事件类型名称
+function getEventTypeName(eventType) {
+  const names = {
+    sit: '久坐提醒',
+    water: '喝水提醒', 
+    eye: '护眼提醒'
+  };
+  return names[eventType] || eventType;
+}
 
 async function triggerNotification(task) {
   if (settings.soundEnabled) {
     invoke('play_notification_sound').catch(() => {});
   }
+  
+  // 处理事件计数和自定义提醒
+  handleEventCounter(task.id);
   
   // 计算合并的任务
   let mergedTasks = [task];
@@ -421,11 +525,12 @@ async function triggerNotification(task) {
   const mergedTaskIds = mergedTasks.map(t => t.id);
   const displayTitle = getMergedDisplayTitle(mergedTaskIds);
   
-  invoke('show_notification', { title: displayTitle, body: getTaskDisplayDesc(task) }).catch(console.error);
+  sendNotification({ title: displayTitle, body: getTaskDisplayDesc(task) });
 
   if (settings.lockScreenEnabled) {
     await startLockScreen(task, mergedTasks);
   } else {
+    invoke('show_reminder_window').catch(console.error);
     activePopup = { ...task, mergedTaskIds: mergedTasks.map(t => t.id) };
     renderFullUI();
   }
@@ -656,6 +761,7 @@ function dismissNotification() {
     resetTask(id);
   });
   
+  invoke('reset_window_state').catch(console.error);
   activePopup = null;
   saveStats();
   processNextTask();
@@ -1123,6 +1229,36 @@ function renderFullUI() {
           </div>
         </div>
 
+        <!-- 自定义提醒配置 -->
+        <div class="setting-row custom-reminder-config">
+          <div class="custom-reminder-header">
+            <div class="setting-info">
+              <label>自定义提醒</label>
+              <span class="setting-desc">每N次事件后提醒用户</span>
+            </div>
+            <button class="preset-btn" id="addCustomReminderBtn">${ICONS.plus} 添加</button>
+          </div>
+          <div id="customRemindersList" class="custom-reminders-list">
+            ${settings.customReminders.map((reminder, index) => `
+              <div class="custom-reminder-item" data-index="${index}">
+                <div class="custom-reminder-controls">
+                  <select class="custom-reminder-event" data-index="${index}">
+                    <option value="sit" ${reminder.eventType === 'sit' ? 'selected' : ''}>久坐提醒</option>
+                    <option value="water" ${reminder.eventType === 'water' ? 'selected' : ''}>喝水提醒</option>
+                    <option value="eye" ${reminder.eventType === 'eye' ? 'selected' : ''}>护眼提醒</option>
+                  </select>
+                  <span class="frequency-label">每</span>
+                  <input type="number" class="custom-reminder-frequency" data-index="${index}" value="${reminder.frequency}" min="1" max="999">
+                  <span class="frequency-label">次</span>
+                </div>
+                <input type="text" class="custom-reminder-message" data-index="${index}" value="${reminder.message}" placeholder="提醒内容">
+                <div class="toggle ${reminder.enabled ? 'active' : ''}" data-index="${index}" data-toggle-type="custom-reminder"></div>
+                <button class="preset-btn delete-reminder-btn" data-index="${index}" data-action="delete-reminder">${ICONS.trash}</button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
         <div class="setting-row">
           <label>${t('settings.autoStart')}</label>
           <div class="toggle ${settings.autoStart ? 'active' : ''}" id="startToggle"></div>
@@ -1150,17 +1286,26 @@ function renderFullUI() {
     </div>
     ` : ''}
 
-    <div class="notification-popup ${activePopup ? 'show' : ''}">
+    <div class="notification-popup ${activePopup ? 'show' : ''} ${activePopup && activePopup.isCustomReminder ? 'custom-reminder-popup' : ''}">
       <div class="notification-content">
-        <div class="emoji">${activePopup ? (ICONS[activePopup.icon] || ICONS.bell) : ''}</div>
-        <h2>${activePopup ? (activePopup.mergedTaskIds ? getMergedDisplayTitle(activePopup.mergedTaskIds) : getTaskDisplayTitle(activePopup)) : ''}</h2>
-        <p>${activePopup ? (activePopup.mergedTaskIds ? getMergedDisplayDesc(activePopup.mergedTaskIds) : getTaskDisplayDesc(activePopup)) : ''}</p>
+        ${activePopup && activePopup.isCustomReminder ? `
+          <div class="custom-reminder-title">
+            <div class="emoji">${ICONS[activePopup.icon] || ICONS.bell}</div>
+            <span>${activePopup.title}</span>
+          </div>
+          <div class="custom-reminder-count">🎯 第${activePopup.count}次</div>
+          <div class="custom-reminder-message">${activePopup.desc}</div>
+        ` : `
+          <div class="emoji">${activePopup ? (ICONS[activePopup.icon] || ICONS.bell) : ''}</div>
+          <h2>${activePopup ? (activePopup.mergedTaskIds ? getMergedDisplayTitle(activePopup.mergedTaskIds) : getTaskDisplayTitle(activePopup)) : ''}</h2>
+          <p>${activePopup ? (activePopup.mergedTaskIds ? getMergedDisplayDesc(activePopup.mergedTaskIds) : getTaskDisplayDesc(activePopup)) : ''}</p>
+        `}
         <div style="display:flex; justify-content:center; gap:10px;">
           <button class="btn btn-primary" id="dismissBtn">${t('buttons.gotIt')}</button>
           ${(() => {
             const count = (activePopup && snoozedStatus[activePopup.id]) ? snoozedStatus[activePopup.id].count : 0;
             const isStrictRestricted = settings.strictMode && !settings.allowStrictSnooze;
-            if (count < settings.maxSnoozeCount && !isStrictRestricted) {
+            if (count < settings.maxSnoozeCount && !isStrictRestricted && !(activePopup && activePopup.isCustomReminder)) {
               return `<button class="btn btn-secondary" id="popupSnoozeBtn">${t('buttons.snooze', { minutes: activePopup ? (activePopup.snoozeMinutes || 5) : 5 })}</button>`;
             }
             return '';
@@ -1567,6 +1712,77 @@ function bindEvents() {
       renderFullUI();
     });
   }
+
+  // 自定义提醒事件处理
+  const addCustomReminderBtn = document.getElementById('addCustomReminderBtn');
+  if (addCustomReminderBtn) {
+    addCustomReminderBtn.addEventListener('click', () => {
+      settings.customReminders.push({
+        eventType: 'sit',
+        frequency: 5,
+        message: '已达到{count}次提醒，请注意休息！',
+        enabled: true
+      });
+      saveSettings();
+      renderFullUI();
+    });
+  }
+
+  // 自定义提醒事件类型变更
+  document.querySelectorAll('.custom-reminder-event').forEach(el => {
+    el.addEventListener('change', (e) => {
+      const index = parseInt(e.target.dataset.index);
+      if (settings.customReminders[index]) {
+        settings.customReminders[index].eventType = e.target.value;
+        saveSettings();
+      }
+    });
+  });
+
+  // 自定义提醒频率变更
+  document.querySelectorAll('.custom-reminder-frequency').forEach(el => {
+    el.addEventListener('input', (e) => {
+      const index = parseInt(e.target.dataset.index);
+      const value = parseInt(e.target.value);
+      if (settings.customReminders[index] && value >= 1 && value <= 999) {
+        settings.customReminders[index].frequency = value;
+        saveSettings();
+      }
+    });
+  });
+
+  // 自定义提醒消息变更
+  document.querySelectorAll('.custom-reminder-message').forEach(el => {
+    el.addEventListener('input', (e) => {
+      const index = parseInt(e.target.dataset.index);
+      if (settings.customReminders[index]) {
+        settings.customReminders[index].message = e.target.value;
+        saveSettings();
+      }
+    });
+  });
+
+  // 自定义提醒开关
+  document.querySelectorAll('[data-toggle-type="custom-reminder"]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      const index = parseInt(e.target.dataset.index);
+      if (settings.customReminders[index]) {
+        settings.customReminders[index].enabled = !settings.customReminders[index].enabled;
+        el.classList.toggle('active', settings.customReminders[index].enabled);
+        saveSettings();
+      }
+    });
+  });
+
+  // 删除自定义提醒
+  document.querySelectorAll('[data-action="delete-reminder"]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      const index = parseInt(e.target.dataset.index);
+      settings.customReminders.splice(index, 1);
+      saveSettings();
+      renderFullUI();
+    });
+  });
 }
 
 window.triggerNotification = triggerNotification;

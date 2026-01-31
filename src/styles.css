@@ -1151,6 +1151,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
   padding: 12px;
   background: var(--bg);
   border: 1px solid var(--border);
@@ -1168,7 +1169,9 @@ body {
   display: flex;
   gap: 8px;
   align-items: center;
-  flex: 1;
+  flex: 1 1 240px;
+  flex-wrap: wrap;
+  order: 1;
 }
 
 .custom-reminder-item select,
@@ -1176,7 +1179,7 @@ body {
 .custom-reminder-item input[type="text"],
 .custom-reminder-controls select,
 .custom-reminder-controls input[type="number"],
-.custom-reminder-message {
+.custom-reminder-item .custom-reminder-message {
   padding: 6px 8px;
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -1190,7 +1193,7 @@ body {
 .custom-reminder-item input:focus,
 .custom-reminder-controls select:focus,
 .custom-reminder-controls input:focus,
-.custom-reminder-message:focus {
+.custom-reminder-item .custom-reminder-message:focus {
   outline: none;
   border-color: var(--primary);
   box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
@@ -1209,9 +1212,11 @@ body {
   white-space: nowrap;
 }
 
-.custom-reminder-message {
-  flex: 1;
-  min-width: 120px;
+.custom-reminder-item .custom-reminder-message {
+  flex: 1 1 100%;
+  width: 100%;
+  min-width: 0;
+  order: 3;
 }
 
 .delete-reminder-btn {
@@ -1219,8 +1224,13 @@ body {
   color: var(--danger);
 }
 
-.custom-reminder-item .toggle {
+.custom-reminder-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-left: auto;
+  flex: 0 0 auto;
+  order: 2;
 }
 
 .custom-reminder-item button[data-action="delete-reminder"],
@@ -1289,7 +1299,7 @@ body {
   gap: 8px;
 }
 
-.custom-reminder-message {
+.custom-reminder-popup .custom-reminder-message {
   font-size: 1rem;
   line-height: 1.5;
   opacity: 0.95;

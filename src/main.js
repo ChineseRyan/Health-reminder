@@ -1,4 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
+import { getVersion } from '@tauri-apps/api/app';
 import { listen } from '@tauri-apps/api/event';
 import { enable, disable, isEnabled } from '@tauri-apps/plugin-autostart';
 import { requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
@@ -47,6 +48,7 @@ let settings = {
   customReminders: [], // 自定义提醒配置
 };
 
+let appVersion = '';
 let countdowns = {};  // 现在由后端事件更新
 let snoozedStatus = {}; // 推迟状态
 let stats = {
@@ -54,6 +56,8 @@ let stats = {
   waterCups: 0,
   workMinutes: 0,
 };
+let currentStatsDayKey = null;
+let dailyStatsResetTimer = null;
 
 let eventCounters = {
   sit: 0,
@@ -79,12 +83,22 @@ let isUpdating = false;
 let isCheckingUpdate = false;
 let updateMessage = null;
 let showIdleResetBanner = false;  // 显示空闲重置通知横幅
+let idleResetBannerAutoHideTimer = null;
 
 let domCache = null;
 let isUiSuspended = false;
 let lastTrayTooltipText = '';
 let lastTrayTooltipUpdateAt = 0;
 const TRAY_TOOLTIP_MIN_INTERVAL_MS = 5000;
+
+function getStatsDayKey(date = new Date()) {
+  const boundary = new Date(date);
+  boundary.setHours(4, 0, 0, 0);
+  if (date < boundary) {
+    boundary.setDate(boundary.getDate() - 1);
+  }
+  return boundary.toDateString();
+}
 
 // 同步任务配置到后端
 async function syncTasksToBackend() {
@@ -102,6 +116,14 @@ async function syncTasksToBackend() {
 
 async function init() {
   const urlParams = new URLSearchParams(window.location.search);
+  const isTauri = !!(window.__TAURI__ && window.__TAURI__.core);
+  if (isTauri) {
+    try {
+      appVersion = await getVersion();
+    } catch (e) {
+      appVersion = '';
+    }
+  }
   if (urlParams.get('mode') === 'lock_slave') {
     const task = {
       title: urlParams.get('title') || '休息时间',
@@ -151,7 +173,15 @@ async function init() {
     return;
   }
 
+  if (!isTauri) {
+    setLocale(settings.language || detectLocale());
+    renderFullUI();
+    return;
+  }
+
   await loadSettings();
+  currentStatsDayKey = getStatsDayKey();
+  scheduleNextDailyStatsReset();
 
   // 初始化语言设置
   if (settings.language) {
@@ -195,6 +225,7 @@ async function init() {
   document.addEventListener('visibilitychange', () => {
     isUiSuspended = document.hidden;
     if (!isUiSuspended) {
+      ensureDailyStatsCurrent();
       cacheDomRefs();
       updateLiveValues();
       updateTrayTooltip(true);
@@ -259,8 +290,25 @@ async function init() {
 
     // 刚进入空闲状态时，显示横幅通知
     if (isIdle && !wasIdle && settings.resetOnIdle) {
+      if (idleResetBannerAutoHideTimer) {
+        clearTimeout(idleResetBannerAutoHideTimer);
+        idleResetBannerAutoHideTimer = null;
+      }
       showIdleResetBanner = true;
       renderFullUI();
+    }
+
+    if (!isIdle && wasIdle && showIdleResetBanner) {
+      if (idleResetBannerAutoHideTimer) {
+        clearTimeout(idleResetBannerAutoHideTimer);
+      }
+      idleResetBannerAutoHideTimer = setTimeout(() => {
+        showIdleResetBanner = false;
+        idleResetBannerAutoHideTimer = null;
+        if (!isUiSuspended) {
+          renderFullUI();
+        }
+      }, 2000);
     }
 
     if (!isUiSuspended) {
@@ -388,7 +436,9 @@ async function loadSettings() {
   const savedStats = localStorage.getItem('reminder_stats');
   if (savedStats) {
     const parsed = JSON.parse(savedStats);
-    if (parsed.date === new Date().toDateString()) {
+    const now = new Date();
+    const dayKey = getStatsDayKey(now);
+    if (parsed.date === dayKey || (now.getHours() < 4 && parsed.date === now.toDateString())) {
       stats = parsed.stats;
     }
   }
@@ -409,7 +459,7 @@ async function saveSettings() {
 
 function saveStats() {
   localStorage.setItem('reminder_stats', JSON.stringify({
-    date: new Date().toDateString(),
+    date: getStatsDayKey(),
     stats: stats,
   }));
 }
@@ -419,6 +469,44 @@ function saveEventCounters() {
     date: new Date().toDateString(),
     counters: eventCounters,
   }));
+}
+
+function resetDailyStats() {
+  stats = { sitBreaks: 0, waterCups: 0, workMinutes: 0 };
+  workStartTime = Date.now();
+  saveStats();
+  if (!isUiSuspended) {
+    updateLiveValues();
+  } else {
+    updateTrayTooltip(true);
+  }
+}
+
+function ensureDailyStatsCurrent() {
+  const dayKey = getStatsDayKey();
+  if (currentStatsDayKey && dayKey !== currentStatsDayKey) {
+    resetDailyStats();
+  }
+  currentStatsDayKey = dayKey;
+}
+
+function scheduleNextDailyStatsReset() {
+  if (dailyStatsResetTimer) {
+    clearTimeout(dailyStatsResetTimer);
+    dailyStatsResetTimer = null;
+  }
+
+  const now = new Date();
+  const next = new Date(now);
+  next.setHours(4, 0, 0, 0);
+  if (now >= next) {
+    next.setDate(next.getDate() + 1);
+  }
+
+  dailyStatsResetTimer = setTimeout(() => {
+    ensureDailyStatsCurrent();
+    scheduleNextDailyStatsReset();
+  }, Math.max(0, next.getTime() - now.getTime() + 1000));
 }
 
 // tick 函数已移至 Rust 后端，不再需要前端定时器
@@ -1252,8 +1340,10 @@ function renderFullUI() {
                   <span class="frequency-label">次</span>
                 </div>
                 <input type="text" class="custom-reminder-message" data-index="${index}" value="${reminder.message}" placeholder="提醒内容">
-                <div class="toggle ${reminder.enabled ? 'active' : ''}" data-index="${index}" data-toggle-type="custom-reminder"></div>
-                <button class="preset-btn delete-reminder-btn" data-index="${index}" data-action="delete-reminder">${ICONS.trash}</button>
+                <div class="custom-reminder-actions">
+                  <div class="toggle ${reminder.enabled ? 'active' : ''}" data-index="${index}" data-toggle-type="custom-reminder"></div>
+                  <button class="preset-btn delete-reminder-btn" data-index="${index}" data-action="delete-reminder">${ICONS.trash}</button>
+                </div>
               </div>
             `).join('')}
           </div>
@@ -1267,7 +1357,7 @@ function renderFullUI() {
         <div class="setting-row">
           <div class="setting-info">
             <label>${t('settings.version')}</label>
-            <span class="setting-desc">${updateInfo ? t('settings.newVersion', { version: updateInfo.version }) : t('settings.currentVersion')}</span>
+            <span class="setting-desc">${updateInfo ? t('settings.newVersion', { currentVersion: appVersion || '—', newVersion: updateInfo.version }) : t('settings.currentVersion', { version: appVersion || '—' })}</span>
           </div>
           <button class="check-update-btn" id="checkUpdateBtn" ${isCheckingUpdate ? 'disabled' : ''}>
             ${isCheckingUpdate ? '<span class="spinner"></span> ' + t('buttons.checking') : (updateInfo ? t('buttons.updateNow') : t('buttons.checkUpdate'))}
@@ -1370,7 +1460,7 @@ function renderFullUI() {
       </div>
     </div>
 
-    <div class="footer">${t('app.footer')}</div>
+    <div class="footer">${t('app.footer', { version: appVersion || '—' })}</div>
 
     ${showIdleResetBanner ? `
     <div class="idle-reset-banner">
@@ -1638,6 +1728,10 @@ function bindEvents() {
   const idleResetDismissBtn = document.getElementById('idleResetDismissBtn');
   if (idleResetDismissBtn) {
     idleResetDismissBtn.addEventListener('click', () => {
+      if (idleResetBannerAutoHideTimer) {
+        clearTimeout(idleResetBannerAutoHideTimer);
+        idleResetBannerAutoHideTimer = null;
+      }
       showIdleResetBanner = false;
       renderFullUI();
     });
